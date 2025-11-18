@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+
+    <!-- Properties for log directory and file names -->
+    <Properties>
+        <Property name="LOG_PATH">logs</Property>
+        <Property name="LOG_FILE">dentalclinic</Property>
+        <Property name="LOG_PATTERN">%d{dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</Property>
+        <!-- Console pattern: %logger{0} shows only class name without package -->
+        <!-- [%t] = thread name - remove if you don't want to see it -->
+        <Property name="CONSOLE_PATTERN">%d{dd HH:mm:ss.SSS} %highlight{%-5level}{FATAL=red, ERROR=red, WARN=yellow, INFO=green, DEBUG=cyan, TRACE=blue} %style{%logger{0}}{cyan} - %msg%n</Property>
+    </Properties>
+
+    <Appenders>
+        <!-- Console Appender -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${CONSOLE_PATTERN}"/>
+            <!-- Filter out specific startup messages -->
+            <Filters>
+                <!-- Hide "profile is active" message -->
+                <!-- <RegexFilter regex=".*profile is active.*" onMatch="DENY" onMismatch="NEUTRAL"/> -->
+
+                <!-- Uncomment these to hide more startup messages -->
+                <!-- <RegexFilter regex=".*Started .* in .* seconds.*" onMatch="DENY" onMismatch="NEUTRAL"/> -->
+                <!-- <RegexFilter regex=".*Tomcat started on port.*" onMatch="DENY" onMismatch="NEUTRAL"/> -->
+            </Filters>
+        </Console>
+
+        <!-- Main Application Log File -->
+        <RollingFile name="RollingFile" fileName="${LOG_PATH}/${LOG_FILE}.log"
+                     filePattern="${LOG_PATH}/${LOG_FILE}-%d{yyyy-MM-dd}-%i.log">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <Policies>
+                <!-- Roll over daily -->
+                <TimeBasedTriggeringPolicy/>
+                <!-- Roll over when file reaches 10MB -->
+                <SizeBasedTriggeringPolicy size="10MB"/>
+            </Policies>
+            <!-- Keep 30 days of logs -->
+            <DefaultRolloverStrategy max="30">
+                <Delete basePath="${LOG_PATH}" maxDepth="2">
+                    <IfFileName glob="${LOG_FILE}-*.log"/>
+                    <IfLastModified age="30d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <!-- Error Log File (Errors Only) -->
+        <RollingFile name="ErrorFile" fileName="${LOG_PATH}/${LOG_FILE}-error.log"
+                     filePattern="${LOG_PATH}/${LOG_FILE}-error-%d{yyyy-MM-dd}.log">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <Filters>
+                <!-- Only accept ERROR level -->
+                <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+            </Filters>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="10MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="90">
+                <Delete basePath="${LOG_PATH}" maxDepth="2">
+                    <IfFileName glob="${LOG_FILE}-error-*.log"/>
+                    <IfLastModified age="90d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <!-- Controller Log File -->
+        <RollingFile name="ControllerFile" fileName="${LOG_PATH}/controllers.log"
+                     filePattern="${LOG_PATH}/controllers-%d{yyyy-MM-dd}.log">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="10MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="30"/>
+        </RollingFile>
+
+        <!-- Service Log File -->
+        <RollingFile name="ServiceFile" fileName="${LOG_PATH}/services.log"
+                     filePattern="${LOG_PATH}/services-%d{yyyy-MM-dd}.log">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="10MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="30"/>
+        </RollingFile>
+
+        <!-- SQL Log File -->
+        <RollingFile name="SqlFile" fileName="${LOG_PATH}/sql.log"
+                     filePattern="${LOG_PATH}/sql-%d{yyyy-MM-dd}.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="10MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="7"/>
+        </RollingFile>
+
+        <!-- Security Log File -->
+        <RollingFile name="SecurityFile" fileName="${LOG_PATH}/security.log"
+                     filePattern="${LOG_PATH}/security-%d{yyyy-MM-dd}.log">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="10MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="60"/>
+        </RollingFile>
+
+        <!-- Performance Log File (for monitoring) -->
+        <RollingFile name="PerformanceFile" fileName="${LOG_PATH}/performance.log"
+                     filePattern="${LOG_PATH}/performance-%d{yyyy-MM-dd}.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="10MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="30"/>
+        </RollingFile>
+
+        <!-- Async Appenders for better performance -->
+        <Async name="AsyncFile">
+            <AppenderRef ref="RollingFile"/>
+        </Async>
+
+        <Async name="AsyncError">
+            <AppenderRef ref="ErrorFile"/>
+        </Async>
+    </Appenders>
+
+    <Loggers>
+        <!-- Application Loggers - ONLY com.dentalclinic goes to console -->
+
+        <!-- Controllers - console + controller file + error file -->
+        <Logger name="com.dentalclinic.dentalclinicmanagement.controller" level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="ControllerFile"/>
+            <AppenderRef ref="AsyncError"/>
+        </Logger>
+
+        <!-- Services - console + service file + error file -->
+        <Logger name="com.dentalclinic.dentalclinicmanagement.service" level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="ServiceFile"/>
+            <AppenderRef ref="AsyncError"/>
+        </Logger>
+
+        <!-- Repositories - console + main file + error file -->
+        <Logger name="com.dentalclinic.dentalclinicapp." level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="AsyncFile"/>
+            <AppenderRef ref="AsyncError"/>
+        </Logger>
+
+        <!-- Security - console + security file + error file -->
+        <Logger name="com.dentalclinic.dentalclinicmanagement.security" level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="SecurityFile"/>
+            <AppenderRef ref="AsyncError"/>
+        </Logger>
+
+        <!-- All other com.dentalclinic packages - console + file -->
+        <Logger name="com.dentalclinic" level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="AsyncFile"/>
+            <AppenderRef ref="AsyncError"/>
+        </Logger>
+
+        <!-- SQL Logging - ONLY to file, NOT to console -->
+        <Logger name="org.hibernate.SQL" level="debug" additivity="false">
+            <AppenderRef ref="SqlFile"/>
+        </Logger>
+
+        <!-- SQL Parameters - ONLY to file -->
+        <Logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="trace" additivity="false">
+            <AppenderRef ref="SqlFile"/>
+        </Logger>
+
+        <!-- Spring Framework - ONLY WARN/ERROR to files, NOT to console -->
+        <Logger name="org.springframework" level="warn" additivity="false">
+            <AppenderRef ref="AsyncFile"/>
+            <AppenderRef ref="AsyncError"/>
+        </Logger>
+
+        <!-- Hibernate - ONLY WARN/ERROR to files, NOT to console -->
+        <Logger name="org.hibernate" level="warn" additivity="false">
+            <AppenderRef ref="AsyncFile"/>
+            <AppenderRef ref="AsyncError"/>
+        </Logger>
+
+        <!-- Reduce noise from specific libraries - ONLY WARN/ERROR to files -->
+        <Logger name="org.apache.catalina" level="warn" additivity="false">
+            <AppenderRef ref="AsyncFile"/>
+            <AppenderRef ref="AsyncError"/>
+        </Logger>
+
+        <Logger name="org.apache.tomcat" level="warn" additivity="false">
+            <AppenderRef ref="AsyncFile"/>
+            <AppenderRef ref="AsyncError"/>
+        </Logger>
+
+        <Logger name="io.lettuce" level="warn" additivity="false">
+            <AppenderRef ref="AsyncFile"/>
+            <AppenderRef ref="AsyncError"/>
+        </Logger>
+
+        <Logger name="io.netty" level="warn" additivity="false">
+            <AppenderRef ref="AsyncFile"/>
+            <AppenderRef ref="AsyncError"/>
+        </Logger>
+
+        <!-- Root Logger - ONLY WARN/ERROR to files, NOT to console -->
+        <Root level="warn">
+            <AppenderRef ref="AsyncFile"/>
+            <AppenderRef ref="AsyncError"/>
+        </Root>
+
+        <!-- Profile-specific configurations using Spring Boot properties -->
+        <!-- These will be controlled via application.properties -->
+    </Loggers>
+
+</Configuration>

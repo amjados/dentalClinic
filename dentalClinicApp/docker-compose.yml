@@ -1,0 +1,102 @@
+version: '3.8'
+
+name: dental-clinic
+
+services:
+  dental-clinic-db:
+    image: dental-clinic-db-seeded_image
+    container_name: dental-clinic-db
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=amjadOmar1!A
+      - MSSQL_PID=Express
+    ports:
+      - "50506:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    restart: unless-stopped
+    networks:
+      - dental-clinic-network
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P amjadOmar1!A -Q "SELECT 1" -C || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  dental-clinic-app:
+    image: dental-clinic-app-image
+    container_name: dental-clinic-app
+    depends_on:
+      dental-clinic-db:
+        condition: service_healthy
+      dental-matrix-synapse:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_DATASOURCE_URL=jdbc:sqlserver://dental-clinic-db:1433;databaseName=dentalclinic;encrypt=false;trustServerCertificate=true
+      - SPRING_DATASOURCE_USERNAME=sa
+      - SPRING_DATASOURCE_PASSWORD=amjadOmar1!A
+      # Database Initialization Configuration
+      - DEV_DB_URL=jdbc:sqlserver://dental-clinic-db:1433;databaseName=master;encrypt=false;trustServerCertificate=true
+      - DEV_DB_USERNAME=sa
+      - DEV_DB_PASSWORD=amjadOmar1!A
+      # Matrix Configuration for Docker
+      - MATRIX_ENABLED=true
+      - MATRIX_HOMESERVER_URL=http://dental-matrix-synapse:8008
+      - MATRIX_BOT_USERNAME=@dentalclinic_bot:dentalclinic.local
+      - MATRIX_BOT_PASSWORD=DentalClinic2025!Bot
+      - MATRIX_ROOM_PREFIX=dentalclinic
+    ports:
+      - "8082:8082"
+    restart: unless-stopped
+    networks:
+      - dental-clinic-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8082/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  dental-matrix-synapse:
+    image: matrixdotorg/synapse:latest
+    container_name: dental-matrix-synapse
+    environment:
+      - SYNAPSE_SERVER_NAME=dentalclinic.local
+      - SYNAPSE_REPORT_STATS=no
+      - SYNAPSE_ENABLE_REGISTRATION=yes
+      - SYNAPSE_REGISTRATION_SHARED_SECRET=DentalClinicSecret2025
+    ports:
+      - "8008:8008"
+    volumes:
+      - matrix_data:/data
+    restart: unless-stopped
+    networks:
+      - dental-clinic-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8008/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  dental-synapse-admin:
+    image: awesometechnologies/synapse-admin:latest
+    container_name: dental-synapse-admin
+    hostname: dental-synapse-admin
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    networks:
+      - dental-clinic-network
+    depends_on:
+      - dental-matrix-synapse
+
+networks:
+  dental-clinic-network:
+    driver: bridge
+
+volumes:
+  sqlserver_data:
+  matrix_data:
