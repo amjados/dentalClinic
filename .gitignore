@@ -58,5 +58,13 @@ nul
 *.so
 *.dylib
 
-# Claude
+# AI Tools
 .claude/
+.cursor/
+.aider*
+.copilot/
+*.ai.md
+*_ai_context.txt
+.github/copilot/
+.gpteng/
+.continue/
